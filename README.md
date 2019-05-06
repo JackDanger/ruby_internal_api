@@ -35,7 +35,7 @@ Example:
         # other onboarding stuff
       end
     end
-    Onboarding.complete(@user) #! InternalApiViolationError: Onboarding must use `PaymentApi` methods to execute PaymentApi code.
+    Onboarding.complete(@user) #! Only `PaymentApi` methods can execute PaymentApi code.
 
 
 ## Installation
@@ -45,6 +45,24 @@ Add this line to your application's Gemfile:
 ```ruby
 gem 'internal_api'
 ```
+
+## Performance
+
+This API enforcement is purely dyamic - `internal_api` modified the runtime
+execution of code and checks for correct access patterns. This has a nonzero
+but completely negligible impact on performance and therefore can safely be run
+in production.
+
+If you come from a Java background you may be used to thinking of backtraces as
+very expensive. In Ruby they're quite cheap - the backtrace is always available
+in memory and accessing it only requires [turning](https://github.com/ruby/ruby/blob/c3cf1ef9bbacac6ae5abc99046db173e258dc7ca/vm_backtrace.c#L549-L566) the C stack into (simple) Ruby
+objects.
+
+Constructing a single backtrace in running production code takes only a few microseconds on any
+modern CPU:
+
+    >> Benchmark.measure { 1_000_000.times { Kernel.caller_locations }}.real
+    => 5.190758000011556
 
 ## Contributing
 
