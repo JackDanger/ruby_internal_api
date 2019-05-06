@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = %q{Carve up your Rails monolith via internal APIs}
   spec.description   = %q{Create boundaries within your Rails monolith to simplify service extraction}
-  spec.homepage      = "https://github.com/JackDanger/internal_api"
+  spec.homepage      = "https://github.com/JackDanger/ruby_internal_api"
   spec.license       = "MIT"
 
   # Specify which files should be added to the gem when it is released.
