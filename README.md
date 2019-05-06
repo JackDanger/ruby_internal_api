@@ -4,39 +4,40 @@ This is a gem for decomposing monolithic Rails apps. It allows you to specify an
 
 Example:
 
-    # This is the api you present to other code within the monolith for
-    # managing payment transactions.
-    module PaymentApi
-      def charge(amount_cents, options = {})
-        # This is whatever bespoke, ugly code you've inherited in your existing app.
-        record = PaymentRecord.create(amount_cents)
-        issue = Payments::Issue.new(record).complete!
-        log(issue)
-      end
-    end
+```ruby
+# This is the api you present to other code within the monolith for
+# managing payment transactions.
+module PaymentApi
+  def charge(amount_cents, options = {})
+    # This is whatever bespoke, ugly code you've inherited in your existing app.
+    record = PaymentRecord.create(amount_cents)
+    issue = Payments::Issue.new(record).complete!
+    log(issue)
+  end
+end
 
-    # The internal_api gem allows you to ensure that the above `PaymentApi`
-    # module is the only way anyone can call your code.
-    class PaymentRecord < ActiveRecord::Base
-      internal_api PaymentApi
-    end
+# The internal_api gem allows you to ensure that the above `PaymentApi`
+# module is the only way anyone can call your code.
+class PaymentRecord < ActiveRecord::Base
+  internal_api PaymentApi
+end
 
-    module Payments
-      class Issue
-        internal_api PaymentApi
-      end
-    end
+module Payments
+  class Issue
+    internal_api PaymentApi
+  end
+end
 
 
-    # So when someone adds a new dependency to your internal code they fail their unit tests:
-    module Onboarding
-      def self.complete!(user)
-        PaymentRecord.create(1_00, type: auth) 
-        # other onboarding stuff
-      end
-    end
-    Onboarding.complete(@user) #! Only `PaymentApi` methods can execute PaymentApi code.
-
+# So when someone adds a new dependency to your internal code they fail their unit tests:
+module Onboarding
+  def self.complete!(user)
+    PaymentRecord.create(1_00, type: auth) 
+    # other onboarding stuff
+  end
+end
+Onboarding.complete(@user) #! Only `PaymentApi` methods can execute PaymentApi code.
+```
 
 ## Installation
 
