@@ -5,8 +5,23 @@ This is a gem for decomposing monolithic Rails apps. It allows you to specify an
 Example:
 
 ```ruby
-# This is the api you present to other code within the monolith for
-# managing payment transactions.
+# Any class or module can be the interface for a portion of your app.
+# Imagine trying to collect all payment-related code in your app such that you
+# can guarantee none of it used except in the way you expect.
+#
+# You'll want to somehow encapsulate your models
+class PaymentRecord < ActiveRecord::Base
+  internal_api PaymentApi
+end
+
+# And any helper modules or classes
+module Payments
+  class Issue
+    internal_api PaymentApi
+  end
+end
+
+# And all you need is some object that you specify as the internal_api for all your code.
 module PaymentApi
   def charge(amount_cents, options = {})
     # This is whatever bespoke, ugly code you've inherited in your existing app.
@@ -15,19 +30,6 @@ module PaymentApi
     log(issue)
   end
 end
-
-# The internal_api gem allows you to ensure that the above `PaymentApi`
-# module is the only way anyone can call your code.
-class PaymentRecord < ActiveRecord::Base
-  internal_api PaymentApi
-end
-
-module Payments
-  class Issue
-    internal_api PaymentApi
-  end
-end
-
 
 # So when someone adds a new dependency to your internal code they fail their unit tests:
 module Onboarding
@@ -38,6 +40,11 @@ module Onboarding
 end
 Onboarding.complete(@user) #! Only `PaymentApi` methods can execute PaymentApi code.
 ```
+
+The `internal_api` call rewrites the public methods on your internal code to
+ensure that it can only be called if `PaymentApi` is somewhere in the call
+stack. This allows you to hide an entire portion of your application behind an
+interface of some kind and have confidence it's reasonable well encapsulated.
 
 ## Installation
 
