@@ -72,6 +72,11 @@ modern CPU:
     >> Benchmark.measure { 1_000_000.times { Kernel.caller_locations }}.real
     => 5.190758000011556
 
+## TODO
+
+[ ] Hardcode callers that we'll want to whitelist (e.g. Pry and Rails console)
+[ ] Introduce environment-specific options for erroring or warning
+
 ## Contributing
 
 Patches welcome, forks celebrated. This project is a safe, welcoming space for collaboration, and contributors will adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
