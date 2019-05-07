@@ -1,0 +1,2 @@
+Style/ModuleFunction:
+  EnforcedStyle: extend_self
