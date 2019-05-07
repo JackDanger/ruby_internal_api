@@ -7,8 +7,8 @@ Example:
 ```ruby
 # Any class or module can be the interface for a portion of your app.
 # Imagine trying to collect all payment-related code in your app such that you
-# can guarantee none of it used except in the way you expect.
-#
+# can guarantee none of it is used in surprising ways.
+
 # You'll want to somehow encapsulate your models
 class PaymentRecord < ActiveRecord::Base
   internal_api PaymentApi
@@ -74,8 +74,8 @@ modern CPU:
 
 ## TODO
 
-[ ] Hardcode callers that we'll want to whitelist (e.g. Pry and Rails console)
-[ ] Introduce environment-specific options for erroring or warning
+* [ ] Hardcode callers that we'll want to whitelist (e.g. Pry and Rails console)
+* [ ] Introduce environment-specific options for erroring or warning
 
 ## Contributing
 
