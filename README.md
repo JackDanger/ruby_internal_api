@@ -76,6 +76,8 @@ modern CPU:
 
 * [ ] Hardcode callers that we'll want to whitelist (e.g. Pry and Rails console)
 * [ ] Introduce environment-specific options for erroring or warning
+* [ ] An ActiveRecord extension (separate gem?) that records where associations and models are defined and doesn't permit crossing internal_api boundaries
+* [ ] Exception lists of filenames as option arg to `.internal_api`
 
 ## Contributing
 
