@@ -33,14 +33,13 @@ module InternalApi
   # checks the backtrace and ensures at least one line matches one of the
   # public methods of the protector.
   def protect(protectee, protector)
-    calculate_public_methods!(protector)
+    find_public_methods_of_protector!(protector)
 
-    # Extract the eigenclass of any object
+    # Extract the eigenclass (the class on which `def self.x; end` would be
+    # defined) of any object
     # https://medium.com/@ethan.reid.roberts/rubys-anonymous-eigenclass-putting-the-ei-in-team-ebc1e8f8d668
     eigenclass = (class << protectee; self; end)
 
-    # Rewrite future public singleton methods
-    Rewriter.add_singleton_rewrite_hooks!(protectee, protector)
     # Rewrite eigenclass' future public instance methods
     Rewriter.add_instance_rewrite_hooks!(eigenclass, protector)
     # Rewrite eigenclass' future public singleton methods
@@ -93,12 +92,15 @@ module InternalApi
     raise InternalApi::ViolationError, message
   end
 
-  def calculate_public_methods!(mod)
+  def find_public_methods_of_protector!(mod)
     LoaderMutex.synchronize do
       return if InternalApi.public_method_cache.key?(mod)
 
-      # We cache the public methods because this requires a fairly exhaustive,
-      # recursive lookup of Ruby method hierarchy to perform:
+      # When we need to enumerate the public methods of an object we cache the
+      # result.
+      #
+      # Finding all the methods requires a fairly exhaustive, recursive lookup
+      # of Ruby method hierarchy to perform:
       #
       # https://github.com/ruby/ruby/blob/c3cf1ef9bbacac6ae5abc99046db173e258dc7ca/class.c#L1206-L1238
       #
@@ -107,8 +109,8 @@ module InternalApi
       # >> Benchmark.measure { 10_000.times { Object.public_methods }}.real
       # => 0.1327720000408589800
       #
-      # It's up to the user to avoid adding new public methods to the protected
-      # code after app initialization.
+      # It's up to the user to ensure the objects used as API boundaries have
+      # their public methods defined statically so they get picked up by this.
 
       source_ranges = FullMethodSourceLocation.public_method_source_ranges(mod)
       unless source_ranges
