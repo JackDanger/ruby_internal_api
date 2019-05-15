@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-require 'internal_api/version'
+require 'internal_api/exclusion_list'
 require 'internal_api/full_method_source_location'
+require 'internal_api/public_method_cache'
 require 'internal_api/rewriter'
 
 # The InternalApi module provides one public method (`.internal_api`) available
@@ -14,8 +15,6 @@ require 'internal_api/rewriter'
 # Ruby features specific to a minor version.
 module InternalApi
   extend self
-
-  LoaderMutex = Mutex.new
 
   # ViolationError is raised when protected code is called from code not behind
   # the internal api
@@ -33,7 +32,7 @@ module InternalApi
   # checks the backtrace and ensures at least one line matches one of the
   # public methods of the protector.
   def protect(protectee, protector)
-    find_public_methods_of_protector!(protector)
+    PublicMethodCache.set!(protector)
 
     # Extract the eigenclass (the class on which `def self.x; end` would be
     # defined) of any object
@@ -47,22 +46,14 @@ module InternalApi
   end
 
   def check_caller!(protector)
-    allowed_caller_methods = InternalApi.public_method_cache[protector]
-    # NB: `caller` is much slower than `caller_locations`
-    caller_locations.each do |location|
-      # This calculation is quadratic but as the backtrace is finite and these
-      # comparisons take only tens of nanoseconds each this is fast enough for
-      # production use.
-      allowed_caller_methods.each do |path, range|
-        if location.path == path && range.include?(location.lineno)
-          return path, range
-        end
-      end
+    # NB: `caller_locations` is much faster than `caller`
+    unless ExclusionList.allowed_backtrace?(protector, caller_locations)
+      raise_violation!(caller_locations[1].label, protector)
     end
-    raise_violation!(caller_locations[1].label, protector)
   end
 
   def rewrite_method!(protectee, internal_method, protector)
+    PublicMethodCache.set!(protector)
     protectee.instance_eval do
       # We create a new pointer to the original method
       alias_method "_internal_api_#{internal_method}", internal_method
@@ -73,10 +64,6 @@ module InternalApi
         send("_internal_api_#{internal_method}", *args, &block)
       end
     end
-  end
-
-  def public_method_cache
-    @public_method_cache ||= {}
   end
 
   def debug(line)
@@ -90,37 +77,6 @@ module InternalApi
               " and can only execute when a `#{protector.name}`" \
               ' method is in the backtrace'
     raise InternalApi::ViolationError, message
-  end
-
-  def find_public_methods_of_protector!(mod)
-    LoaderMutex.synchronize do
-      return if InternalApi.public_method_cache.key?(mod)
-
-      # When we need to enumerate the public methods of an object we cache the
-      # result.
-      #
-      # Finding all the methods requires a fairly exhaustive, recursive lookup
-      # of Ruby method hierarchy to perform:
-      #
-      # https://github.com/ruby/ruby/blob/c3cf1ef9bbacac6ae5abc99046db173e258dc7ca/class.c#L1206-L1238
-      #
-      # > Benchmark.measure { 10_000.times { Object.new }}.real
-      # => 0.0033939999993890524
-      # >> Benchmark.measure { 10_000.times { Object.public_methods }}.real
-      # => 0.1327720000408589800
-      #
-      # It's up to the user to ensure the objects used as API boundaries have
-      # their public methods defined statically so they get picked up by this.
-
-      source_ranges = FullMethodSourceLocation.public_method_source_ranges(mod)
-      unless source_ranges
-        raise InternalApi::UnreachableCodeError,
-              "#{self} is protected by #{protector}," \
-              ' which has no public methods'
-      end
-
-      InternalApi.public_method_cache[mod] = source_ranges
-    end
   end
 end
 

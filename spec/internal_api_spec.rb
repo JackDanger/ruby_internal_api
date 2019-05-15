@@ -3,7 +3,7 @@
 # rubocop:disable Metrics/BlockLength
 # rubocop:disable Metrics/LineLength
 
-module Protector
+module ProtectorModule
   extend self
 
   def class_instance_write(line)
@@ -24,7 +24,7 @@ module Protector
 end
 
 class ProtectedClass
-  internal_api Protector
+  internal_api ProtectorModule
 
   def instance_write(line)
     line
@@ -42,7 +42,7 @@ end
 module ProtectedModule
   extend self
 
-  internal_api Protector
+  internal_api ProtectorModule
 
   def instance_write(line)
     line
@@ -56,7 +56,7 @@ end
 RSpec.describe InternalApi do
   it 'preserves arguments and block passing' do
     expect(
-      Protector.class_singleton_write("this should have a 'log: ' prefix and") do |line|
+      ProtectorModule.class_singleton_write("this should have a 'log: ' prefix and") do |line|
         line + ' this suffix'
       end
     ).to eq("log: this should have a 'log: ' prefix and this suffix")
@@ -69,12 +69,12 @@ RSpec.describe InternalApi do
           ProtectedClass.new.instance_write("shouldn't go through")
         end.to raise_error(
           InternalApi::ViolationError,
-          '"block (5 levels) in <top (required)>" is protected by `Protector` and can only execute when a `Protector` method is in the backtrace'
+          '"block (5 levels) in <top (required)>" is protected by `ProtectorModule` and can only execute when a `ProtectorModule` method is in the backtrace'
         )
       end
 
       it 'permits access through the specified API' do
-        expect(Protector.class_instance_write('works')).to eq('works')
+        expect(ProtectorModule.class_instance_write('works')).to eq('works')
       end
     end
 
@@ -84,12 +84,12 @@ RSpec.describe InternalApi do
           ProtectedClass.singleton_write("shouldn't go through")
         end.to raise_error(
           InternalApi::ViolationError,
-          '"block (5 levels) in <top (required)>" is protected by `Protector` and can only execute when a `Protector` method is in the backtrace'
+          '"block (5 levels) in <top (required)>" is protected by `ProtectorModule` and can only execute when a `ProtectorModule` method is in the backtrace'
         )
       end
 
       it 'permits access through the specified API' do
-        expect(Protector.class_singleton_write('works')).to eq('works')
+        expect(ProtectorModule.class_singleton_write('works')).to eq('works')
       end
     end
   end
@@ -101,12 +101,12 @@ RSpec.describe InternalApi do
           ProtectedModule.instance_write("shouldn't go through")
         end.to raise_error(
           InternalApi::ViolationError,
-          '"block (5 levels) in <top (required)>" is protected by `Protector` and can only execute when a `Protector` method is in the backtrace'
+          '"block (5 levels) in <top (required)>" is protected by `ProtectorModule` and can only execute when a `ProtectorModule` method is in the backtrace'
         )
       end
 
       it 'permits access through the specified API' do
-        expect(Protector.module_instance_write('works')).to eq('works')
+        expect(ProtectorModule.module_instance_write('works')).to eq('works')
       end
     end
 
@@ -116,12 +116,12 @@ RSpec.describe InternalApi do
           ProtectedModule.singleton_write("shouldn't go through")
         end.to raise_error(
           InternalApi::ViolationError,
-          '"block (5 levels) in <top (required)>" is protected by `Protector` and can only execute when a `Protector` method is in the backtrace'
+          '"block (5 levels) in <top (required)>" is protected by `ProtectorModule` and can only execute when a `ProtectorModule` method is in the backtrace'
         )
       end
 
       it 'permits access through the specified API' do
-        expect(Protector.module_singleton_write('works')).to eq('works')
+        expect(ProtectorModule.module_singleton_write('works')).to eq('works')
       end
     end
   end
